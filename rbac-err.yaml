@@ -1,0 +1,83 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: unauthorized-access-sa
+  namespace: rbac-err
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: unauthorized-access-pod
+  namespace: rbac-err
+spec:
+  serviceAccountName: unauthorized-access-sa
+  containers:
+    - name: busybox
+      image: busybox
+      command: ['sh', '-c', 'kubectl get pods']
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: rbac-err
+  name: misconfigured-role
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: misconfigured-rolebinding
+  namespace: rbac-err
+subjects:
+  - kind: User
+    name: "some-user"
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: misconfigured-role
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: forbidden-sa
+  namespace: rbac-err
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: default
+  name: forbidden-role
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: []
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: forbidden-rolebinding
+  namespace: rbac-err
+subjects:
+  - kind: ServiceAccount
+    name: forbidden-sa
+    namespace: default
+roleRef:
+  kind: Role
+  name: forbidden-role
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: forbidden-pod
+  namespace: rbac-err
+spec:
+  serviceAccountName: forbidden-sa
+  containers:
+    - name: busybox
+      image: busybox
+      command: ['sh', '-c', 'kubectl get pods']

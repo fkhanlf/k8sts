@@ -1,0 +1,174 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-configmap-not-found
+  namespace: config-errs
+spec:
+  containers:
+  - name: mycontainer
+    image: nginx
+    volumeMounts:
+    - name: config-volume
+      mountPath: /etc/config
+  volumes:
+  - name: config-volume
+    configMap:
+      name: non-existent-configmap
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: invalid-pod-spec
+  namespace: config-errs
+spec:
+  containers:
+  - name: mycontainer
+    image: nginx
+    ports:
+    - containerPort: invalid-port  # Invalid port number
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: invalid-volume-spec
+  namespace: config-errs
+spec:
+  containers:
+  - name: mycontainer
+    image: nginx
+    volumeMounts:
+    - name: myvolume
+      mountPath: /mnt/myvolume
+  volumes:
+  - name: myvolume
+    emptyDir: {}  # This is valid, but an invalid spec might look like an unsupported volume type
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: invalid-request
+  namespace: config-errs
+spec:
+  containers:
+  - name: mycontainer
+    image: nginx
+    resources:
+      limits:
+        memory: invalid-memory  # Invalid memory limit
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: invalid-service-type
+  namespace: config-errs
+spec:
+  type: InvalidType  # Invalid service type
+  selector:
+    app: myapp
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 9376
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-secret-not-found
+  namespace: config-errs
+spec:
+  containers:
+  - name: mycontainer
+    image: nginx
+    env:
+    - name: SECRET_ENV
+      valueFrom:
+        secretKeyRef:
+          name: non-existent-secret
+          key: key
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pvc-not-found
+  namespace: config-errs
+spec:
+  containers:
+  - name: mycontainer
+    image: nginx
+    volumeMounts:
+    - name: myvolume
+      mountPath: /mnt/myvolume
+  volumes:
+  - name: myvolume
+    persistentVolumeClaim:
+      claimName: non-existent-pvc
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: volume-not-found
+  namespace: config-errs
+spec:
+  containers:
+  - name: mycontainer
+    image: nginx
+    volumeMounts:
+    - name: myvolume
+      mountPath: /mnt/myvolume
+  volumes:
+  - name: myvolume  # Volume not defined
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: volume-permission-denied
+  namespace: config-errs
+spec:
+  containers:
+  - name: mycontainer
+    image: nginx
+    volumeMounts:
+    - name: myvolume
+      mountPath: /mnt/myvolume
+  volumes:
+  - name: myvolume
+    hostPath:
+      path: /root  # Assuming this path has restricted permissions
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: container-config-error
+  namespace: config-errs
+spec:
+  containers:
+  - name: mycontainer
+    image: nginx
+    command: ["/bin/bash", "-c", "echo Hello"]  # Incorrect command for nginx
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: duplicate-service
+  namespace: config-errs
+spec:
+  selector:
+    app: myapp
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 9376
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: duplicate-service  # Same name as above
+  namespace: config-errs
+spec:
+  selector:
+    app: myapp
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 9377
+

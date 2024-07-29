@@ -1,0 +1,110 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: oom-pod
+  namespace: resource
+spec:
+  containers:
+  - name: resources-demo
+    image: polinux/stress
+    command: ["stress"]
+    args: ["--cpu", "2", "--vm", "1", "--vm-bytes", "1G", "--vm-hang", "1"]
+    resources:
+      requests:
+        cpu: "200m"
+        memory: "200Mi"
+      limits:
+        cpu: "0.2"
+        memory: "1Gi"
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: cpu-hog-pod
+  namespace: resource
+spec:
+  containers:
+  - name: demo
+    image: polinux/stress
+    command: ["stress"]
+    args: ["--cpu", "4", "--timeout", "600s"]
+    resources:
+      requests:
+        cpu: "500m"
+      limits:
+        cpu: "500m"
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: out-of-disk-pod
+  namespace: resource
+spec:
+  containers:
+  - name: disk-hog
+    image: busybox
+    command: ["/bin/sh", "-c"]
+    args:
+    - "dd if=/dev/zero of=/file1.txt bs=1M count=1024 && sleep 3600"
+    volumeMounts:
+    - name: tmp-volume
+      mountPath: /tmp
+  volumes:
+  - name: tmp-volume
+    emptyDir: {}
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: compute-resources
+  namespace: resource
+spec:
+  hard:
+    requests.cpu: "2"
+    requests.memory: 2Gi
+    limits.cpu: "2"
+    limits.memory: 2Gi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: quota-exceed-pod
+  namespace: resource
+spec:
+  containers:
+  - name: quota-exceed
+    image: nginx
+    resources:
+      limits:
+        memory: "3Gi"
+        cpu: "3"
+      requests:
+        memory: "3Gi"
+        cpu: "3"
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: object-counts
+  namespace: resource
+spec:
+  hard:
+    configmaps: "1"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: example-config-1
+  namespace: resource
+data:
+  example.property.1: "value-1"
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: example-config-2
+  namespace: resource
+data:
+  example.property.2: "value-2"
+

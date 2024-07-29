@@ -1,0 +1,94 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pending-pod
+  namespace: pod-error
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+  nodeSelector:
+    non-existent-label: "true"  # No nodes will match this selector
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: crashloopbackoff-pod
+  namespace: pod-error
+spec:
+  containers:
+  - name: faulty-container
+    image: busybox
+    command: ["sh", "-c", "echo 'Crashed!'; exit 1"]  # Container will crash immediately
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-initializing
+  namespace: pod-error
+spec:
+  initContainers:
+  - name: init-container
+    image: busybox
+    command: ["sh", "-c", "sleep 3600"]  # Init container will run for a long time
+  containers:
+  - name: nginx
+    image: nginx
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: terminated-pod
+  namespace: pod-error
+spec:
+  restartPolicy: Never
+  containers:
+  - name: terminated-container
+    image: busybox
+    command: ["sh", "-c", "sleep 10"]  # Container will terminate after 10 seconds
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: evicted-pod
+  namespace: pod-error
+spec:
+  containers:
+  - name: high-memory-container
+    image: busybox
+    resources:
+      requests:
+        memory: "8Gi"  # Request a large amount of memory
+    command: ["sh", "-c", "sleep 3600"]
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: unschedulable-pod
+  namespace: pod-error
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+  nodeSelector:
+    nonexistent: "true"  # No nodes will match this selector
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pod-unavailable-deployment
+  namespace: pod-error
+spec:
+  replicas: 0  # Assuming your cluster can't handle 100 replicas add resource quota to show this error
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx
+
