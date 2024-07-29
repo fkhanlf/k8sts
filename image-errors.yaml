@@ -49,4 +49,3 @@ spec:
   containers:
   - name: nginx
     image: fazlurkhan/alpine:v1
-
