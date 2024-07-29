@@ -45,8 +45,8 @@ metadata:
   namespace: image
 spec:
   imagePullSecrets:
-  - name: nonexistent-secret
+  - name: my-secret
   containers:
   - name: nginx
-    image: nginx:latest
+    image: fazlurkhan/alpine:v1
 
