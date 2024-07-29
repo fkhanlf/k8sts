@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  namespace: image
+  name: image-pull-backoff
+spec:
+  containers:
+  - name: nginx
+    image: nginx:nonexistent-tag
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: invalid-image-name
+  namespace: image
+spec:
+  containers:
+  - name: nginx
+    image: invalid-image-name
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: image-not-found
+  namespace: image
+spec:
+  containers:
+  - name: nginx
+    image: nginx:nonexistent
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: image-pull-failed
+  namespace: image
+spec:
+  containers:
+  - name: nginx
+    image: invalid.registry/nginx:latest
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: image-pull-secret-error
+  namespace: image
+spec:
+  imagePullSecrets:
+  - name: nonexistent-secret
+  containers:
+  - name: nginx
+    image: nginx:latest
+
