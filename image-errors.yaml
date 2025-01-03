@@ -2,46 +2,36 @@ apiVersion: v1
 kind: Pod
 metadata:
   namespace: image
-  name: image-pull-backoff
+  name: image-error-1
 spec:
   containers:
   - name: nginx
-    image: nginx:nonexistent-tag
+    image: nginx:wormbook
 ---
 apiVersion: v1
 kind: Pod
 metadata:
-  name: invalid-image-name
+  name: image-error-2
+spec:
+  containers:
+  - name: busybox
+    image: busyboxs
+    command: ["/bin/sh", "-ec", "sleep 1000d"]
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: image-error-3
   namespace: image
 spec:
   containers:
   - name: nginx
-    image: invalid-image-name
+    image: lf.io/library/nginx:latest
 ---
 apiVersion: v1
 kind: Pod
 metadata:
-  name: image-not-found
-  namespace: image
-spec:
-  containers:
-  - name: nginx
-    image: nginx:nonexistent
----
-apiVersion: v1
-kind: Pod
-metadata:
-  name: image-pull-failed
-  namespace: image
-spec:
-  containers:
-  - name: nginx
-    image: invalid.registry/nginx:latest
----
-apiVersion: v1
-kind: Pod
-metadata:
-  name: image-pull-secret-error
+  name: image-error-4
   namespace: image
 spec:
   imagePullSecrets:
