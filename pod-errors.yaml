@@ -1,36 +1,36 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: pending-pod
+  name: pod-error1
   namespace: pod-error
 spec:
   containers:
   - name: nginx
     image: nginx
   nodeSelector:
-    non-existent-label: "true"  # No nodes will match this selector
+    app: foo
 ---
 apiVersion: v1
 kind: Pod
 metadata:
-  name: crashloopbackoff-pod
+  name: pod-error2
   namespace: pod-error
 spec:
   containers:
-  - name: faulty-container
+  - name: busybox
     image: busybox
-    command: ["sh", "-c", "echo 'Crashed!'; exit 1"]  # Container will crash immediately
+    command: ["sh", "-c", "ech0 'Crashed!'; exit 1"]  
 ---
 apiVersion: v1
 kind: Pod
 metadata:
-  name: pod-initializing
+  name: pod-error3
   namespace: pod-error
 spec:
   initContainers:
   - name: init-container
     image: busybox
-    command: ["sh", "-c", "sleep 3600"]  # Init container will run for a long time
+    command: ["sh", "-c", "sleep 99999"] 
   containers:
   - name: nginx
     image: nginx
@@ -38,23 +38,23 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
-  name: terminated-pod
+  name: pod-error4
   namespace: pod-error
 spec:
   restartPolicy: Never
   containers:
-  - name: terminated-container
+  - name: busybox
     image: busybox
-    command: ["sh", "-c", "sleep 10"]  # Container will terminate after 10 seconds
+    command: ["sh", "-c", "echo 'Hello from a short-lived container!'; sleep 5"]
 ---
 apiVersion: v1
 kind: Pod
 metadata:
-  name: evicted-pod
+  name: pod-error5
   namespace: pod-error
 spec:
   containers:
-  - name: high-memory-container
+  - name: busybox
     image: busybox
     resources:
       requests:
@@ -64,31 +64,121 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
-  name: unschedulable-pod
+  name: pod-error6
   namespace: pod-error
 spec:
   containers:
-  - name: nginx
-    image: nginx
-  nodeSelector:
-    nonexistent: "true"  # No nodes will match this selector
+    - name: test-container
+      image: nginx
+      volumeMounts:
+        - name: secret-volume
+          mountPath: /etc/secret-volume
+          readOnly: true
+  volumes:
+    - name: secret-volume
+      secret:
+        secretName: test-secret
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-error7
+  namespace: pod-error
+spec:
+  containers:
+  - name: myapp
+    image: busybox
+    command:
+    - sh
+    - -c
+    - |
+      echo "Starting the app ...";
+      tail /dev/zero 
+    resources:
+      limits:
+        memory: "10Mi" 
+        cpu: "100m"   
+      requests:
+        memory: "10Mi"
+        cpu: "50m"
+  restartPolicy: Never
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-error8
+  namespace: pod-error
+spec:
+      containers:
+      - name: busybox
+        image: busybox
+        command: ["sh", "-c", "sleep 36000"] 
+        readinessProbe:
+          exec:
+            command:
+            - cat
+            - /appfile
+          initialDelaySeconds: 5
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-error9
+  namespace: pod-error
+spec:
+  containers:
+  - name: nginx-container
+    image: nginx:latest
+    command:
+    - sh
+    - -c
+    - |
+      echo "Simulating slow nginx startup...";
+      sleep 10; 
+      nginx -g "daemon off;" 
+    livenessProbe:
+      httpGet:
+        path: /
+        port: 80
+      initialDelaySeconds: 1 
+      periodSeconds: 5
+      failureThreshold: 1   
+    ports:
+    - containerPort: 80
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: pod-unavailable-deployment
-  namespace: pod-error
+  name: mariadb-deployment
 spec:
-  replicas: 0  # Assuming your cluster can't handle 100 replicas add resource quota to show this error
+  replicas: 1
   selector:
     matchLabels:
-      app: nginx
+      app: mariadb
   template:
     metadata:
       labels:
-        app: nginx
+        app: mariadb
     spec:
       containers:
-      - name: nginx
-        image: nginx
+      - name: mariadb
+        image: mariadb:10.4
+
+        env:
+        - name: MARIADB_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mariadb-root-password
+              key: password
+        volumeMounts:
+        - name: mariadb-config-volume
+          mountPath: /etc/mysql/conf.d
+      volumes:
+      - name: mariadb-config-volume
+        configMap:
+          name: mariadb-config
+          items:
+            - key: max_allowed_packet.cnf
+              path: max_allowed_packet.cnf
 
